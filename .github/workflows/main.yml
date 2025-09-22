@@ -1,0 +1,56 @@
+name: Node.js Docker CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main  # Trigger when code is pushed to the main branch
+ 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v5.0.0
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v5.0.0
+        with:
+          node-version: '16'  # Use Node.js version 16
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Run tests (if you have tests)
+      - name: Run tests
+        run: npm test || echo "No tests found"  # You can replace this with a specific test command if you have tests
+
+  docker:
+    needs: build  # This job will run after the 'build' job is successful
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v5.0.0
+
+      # Step 2: Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3.5.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}  # Set in GitHub Secrets
+          password: ${{ secrets.DOCKER_PASSWORD }}  # Set in GitHub Secrets
+
+      # Step 3: Build the Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/nodejs-demo-app:${{ github.sha }} .
+      
+      # Step 4: Push the Docker image to Docker Hub
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/nodejs-demo-app:${{ github.sha }}
+
